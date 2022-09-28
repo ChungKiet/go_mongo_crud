@@ -5,12 +5,16 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"go-crud-mongo/student_business"
+	"go-crud-mongo/student_model"
 	"go-crud-mongo/student_storage"
+	"go-crud-mongo/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"log"
+	"strconv"
+	"sync"
 )
 
 const (
@@ -30,6 +34,9 @@ var (
 	mongoClient *mongo.Client
 	err         error
 )
+
+var wg sync.WaitGroup
+var mu sync.Mutex
 
 func init() {
 	ctx = context.TODO()
@@ -53,6 +60,7 @@ func init() {
 		Keys: bson.M{
 			"s_id": 1,
 		},
+		Options: options.Index().SetUnique(true),
 	}
 
 	studC.Indexes().CreateOne(ctx, index)
@@ -61,29 +69,59 @@ func init() {
 	server = gin.Default()
 }
 
+func InsertData(thread int) {
+	var testStudC *mongo.Collection
+	var testMongoClient *mongo.Client
+
+	uriConn := "mongodb://" + USER + ":" + PASSWORD + "@" + HOST + ":" + PORT + "/" + DB_NAME + "?authSource=admin"
+	option := options.Client().ApplyURI(uriConn)
+	testMongoClient, err := mongo.Connect(ctx, option)
+	if err != nil {
+		log.Fatal("error while connecting with mongo", err)
+	}
+
+	err = testMongoClient.Ping(context.Background(), readpref.Primary())
+	if err != nil {
+		log.Fatal("error while trying to ping mongo", err)
+	}
+
+	fmt.Println("mongo connection established")
+	mu.Lock()
+
+	testStudC = testMongoClient.Database("student_dev_training").Collection("student")
+	idInc, _ := testStudC.CountDocuments(ctx, bson.D{})
+
+	randomStud := &student_model.Student{
+		SID:    strconv.FormatInt(idInc, 10),
+		Name:   utils.RandomName(),
+		Class:  utils.RandomClass(),
+		Gender: utils.RandomGender(),
+	}
+
+	testStudC.InsertOne(ctx, randomStud)
+
+	mu.Unlock()
+
+	wg.Done()
+
+	defer testMongoClient.Disconnect(ctx)
+}
+
+func InsertConcurrency() {
+	n := 10
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go InsertData(i)
+	}
+	wg.Wait()
+}
+
 func main() {
-	//uriConn := "mongodb://" + USER + ":" + PASSWORD + "@" + HOST + ":" + PORT + "/" + DB_NAME + "?authSource=admin"
-	//option := options.Client().ApplyURI(uriConn)
-	//client, err := mongo.NewClient(option)
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	//err = client.Connect(ctx)
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//defer client.Disconnect(ctx)
-	//
-	//databases, err := client.ListDatabaseNames(ctx, bson.M{})
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//fmt.Println(databases)
 	defer mongoClient.Disconnect(ctx)
 
 	basePath := server.Group("/v1")
 	sc.RegisterUserRoutes(basePath)
 
 	log.Fatal(server.Run(":5678"))
+	//InsertConcurrency()
 }

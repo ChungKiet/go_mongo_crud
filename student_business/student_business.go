@@ -16,8 +16,23 @@ type CreateStudentRequest struct {
 	Gender string `json:"gender" bson:"gender" binding:"required"`
 }
 
+type GetStudentRequest struct {
+	SID string `form:"s_id"`
+}
+
+type UpdateStudentRequest struct {
+	SID    string `json:"s_id" bson:"s_id"`
+	Name   string `json:"name" bson:"name" binding:"required"`
+	Class  int    `json:"class" bson:"class" binding:"required"`
+	Gender string `json:"gender" bson:"gender" binding:"required"`
+}
+
 type StudentController struct {
 	StudentService student_storage.StudentStorageService
+}
+
+type DeleteStudentRequest struct {
+	SID string `form:"s_id"`
 }
 
 func New(studentService student_storage.StudentStorageService) StudentController {
@@ -50,10 +65,6 @@ func (s *StudentController) CreateStudent(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, result)
 }
 
-type GetStudentRequest struct {
-	SID string `form:"s_id"`
-}
-
 func (s *StudentController) GetStudent(ctx *gin.Context) {
 
 	stud := student_model.Student{}
@@ -63,14 +74,12 @@ func (s *StudentController) GetStudent(ctx *gin.Context) {
 		return
 	}
 
-	fmt.Print(request)
-
 	stud.SID = request.SID
 
 	result, err := s.StudentService.GetStudent(stud.SID)
 
 	if err != nil || result == nil {
-		fmt.Print("Error create config")
+		fmt.Print("Error get config")
 		ctx.JSON(http.StatusOK, err)
 	}
 
@@ -91,7 +100,7 @@ func (s *StudentController) GetAllStudent(ctx *gin.Context) {
 func (s *StudentController) UpdateStudent(ctx *gin.Context) {
 
 	stud := student_model.Student{}
-	request := &CreateStudentRequest{}
+	request := &UpdateStudentRequest{}
 	if err := ctx.ShouldBindBodyWith(&request, binding.JSON); err != nil {
 		ctx.JSON(http.StatusBadRequest, err)
 		return
@@ -102,38 +111,35 @@ func (s *StudentController) UpdateStudent(ctx *gin.Context) {
 	stud.Class = request.Class
 	stud.Gender = request.Gender
 
-	result, err := s.StudentService.CreateStudent(&stud)
+	err := s.StudentService.UpdateStudent(request.SID, request.Name, request.Class, request.Gender)
 
-	if err != nil || result == nil {
-		fmt.Print("Error create config")
+	if err != nil {
+		fmt.Print("Error update config")
 		ctx.JSON(http.StatusOK, err)
 	}
 
-	ctx.JSON(http.StatusOK, result)
+	ctx.JSON(http.StatusOK, "Update Successful!")
 }
 
 func (s *StudentController) DeleteStudent(ctx *gin.Context) {
 
 	stud := student_model.Student{}
-	request := &CreateStudentRequest{}
-	if err := ctx.ShouldBindBodyWith(&request, binding.JSON); err != nil {
+	request := &DeleteStudentRequest{}
+	if err := ctx.ShouldBindQuery(&request); err != nil {
 		ctx.JSON(http.StatusBadRequest, err)
 		return
 	}
 
 	stud.SID = request.SID
-	stud.Name = request.Name
-	stud.Class = request.Class
-	stud.Gender = request.Gender
 
-	result, err := s.StudentService.CreateStudent(&stud)
+	err := s.StudentService.DeleteStudent(request.SID)
 
-	if err != nil || result == nil {
-		fmt.Print("Error create config")
+	if err != nil {
+		fmt.Print("Error update config")
 		ctx.JSON(http.StatusOK, err)
 	}
 
-	ctx.JSON(http.StatusOK, result)
+	ctx.JSON(http.StatusOK, "Delete Successful!")
 }
 
 func (s *StudentController) RegisterUserRoutes(rg *gin.RouterGroup) {
