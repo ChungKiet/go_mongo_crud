@@ -50,7 +50,97 @@ func (s *StudentController) CreateStudent(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, result)
 }
 
+type GetStudentRequest struct {
+	SID string `form:"s_id"`
+}
+
+func (s *StudentController) GetStudent(ctx *gin.Context) {
+
+	stud := student_model.Student{}
+	request := &GetStudentRequest{}
+	if err := ctx.ShouldBindQuery(&request); err != nil {
+		ctx.JSON(http.StatusBadRequest, request)
+		return
+	}
+
+	fmt.Print(request)
+
+	stud.SID = request.SID
+
+	result, err := s.StudentService.GetStudent(stud.SID)
+
+	if err != nil || result == nil {
+		fmt.Print("Error create config")
+		ctx.JSON(http.StatusOK, err)
+	}
+
+	ctx.JSON(http.StatusOK, result)
+}
+
+func (s *StudentController) GetAllStudent(ctx *gin.Context) {
+
+	allStudent, err := s.StudentService.GetAllStudent()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, allStudent)
+}
+
+func (s *StudentController) UpdateStudent(ctx *gin.Context) {
+
+	stud := student_model.Student{}
+	request := &CreateStudentRequest{}
+	if err := ctx.ShouldBindBodyWith(&request, binding.JSON); err != nil {
+		ctx.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	stud.SID = request.SID
+	stud.Name = request.Name
+	stud.Class = request.Class
+	stud.Gender = request.Gender
+
+	result, err := s.StudentService.CreateStudent(&stud)
+
+	if err != nil || result == nil {
+		fmt.Print("Error create config")
+		ctx.JSON(http.StatusOK, err)
+	}
+
+	ctx.JSON(http.StatusOK, result)
+}
+
+func (s *StudentController) DeleteStudent(ctx *gin.Context) {
+
+	stud := student_model.Student{}
+	request := &CreateStudentRequest{}
+	if err := ctx.ShouldBindBodyWith(&request, binding.JSON); err != nil {
+		ctx.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	stud.SID = request.SID
+	stud.Name = request.Name
+	stud.Class = request.Class
+	stud.Gender = request.Gender
+
+	result, err := s.StudentService.CreateStudent(&stud)
+
+	if err != nil || result == nil {
+		fmt.Print("Error create config")
+		ctx.JSON(http.StatusOK, err)
+	}
+
+	ctx.JSON(http.StatusOK, result)
+}
+
 func (s *StudentController) RegisterUserRoutes(rg *gin.RouterGroup) {
 	studentRoute := rg.Group("/student")
 	studentRoute.POST("/create-student", s.CreateStudent)
+	studentRoute.GET("/", s.GetAllStudent)
+	studentRoute.GET("/get-student", s.GetStudent)
+	studentRoute.PUT("/update-student", s.UpdateStudent)
+	studentRoute.DELETE("/delete-student", s.DeleteStudent)
 }
