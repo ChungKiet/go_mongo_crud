@@ -14,7 +14,7 @@ type StudentCollections struct {
 	ctx               context.Context
 }
 
-func NewUserService(studentCollection *mongo.Collection, ctx context.Context) *StudentCollections {
+func NewStudentStorage(studentCollection *mongo.Collection, ctx context.Context) *StudentCollections {
 	return &StudentCollections{
 		studentCollection: studentCollection,
 		ctx:               ctx,

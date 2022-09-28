@@ -8,7 +8,7 @@ type Student struct {
 	SID    string `json:"s_id" bson:"s_id"`
 	Name   string `json:"name" bson:"name" binding:"required"`
 	Class  int    `json:"class" bson:"class" binding:"required"`
-	Gender string `json:"gender" bson:"gender" binding:"required,oneof=MALE, FEMALE"`
+	Gender string `json:"gender" bson:"gender" binding:"required,oneof=male, female"`
 }
 
 type StudentMethod interface {
